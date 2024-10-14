@@ -7,11 +7,13 @@
 
 import SwiftUI
 
+var genericUser = UserModel(id: UUID(), name: "Generic", preferences: UserPreferences(nudgeFrequency: .high), carPreferences: CarPreferences(), theme: AppTheme())
+
 @main
 struct pcApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(user: genericUser)
         }
     }
 }
