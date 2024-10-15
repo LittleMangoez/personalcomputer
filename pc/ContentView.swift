@@ -20,7 +20,10 @@ struct ContentView: View {
                     .submitLabel(.send)
                     .onSubmit {
                         print("Sending to parser")
-                        manager.handleUserInput(prompt)
+                        manager.handleUserInput(input: prompt) {
+                            prompt = ""
+                        }
+                            
                     }
             }
         }
