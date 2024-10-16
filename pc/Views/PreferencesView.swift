@@ -7,57 +7,206 @@
 
 import SwiftUI
 
+enum preferenceType: String, CaseIterable, Identifiable {
+    case nudgeFreq = "Nudge Frequency"
+    case notifSound = "Notification Sound"
+    case showTasks = "Show Tasks"
+    case streakTrack = "Streak Tracking"
+    
+    var id: String { self.rawValue }
+}
+
 struct PreferencesView: View {
     @EnvironmentObject var userManager: UserManagement
     @State private var dragOffset: CGFloat = 0
-        @State private var currentMode: Int = 1 // 0: Top, 1: Middle, 2: Bottom
-
-        // The three positions: Top, Middle, Bottom
-        let positions: [CGFloat] = [-100, 0, 100] // Adjust as needed based on screen size
+    @State private var nudgeMode: Int = 1 // 0: Top, 1: Middle, 2: Bottom
+    @State private var currentMode: Int = 0 // 0: Top, 1: Bottom
     
-    @State var selectedPreference: 
-        
-        var body: some View {
-            HStack {
-                List {
-                    <#code#>
-                }
-                
-                Spacer()
-                
-                RoundedRectangle(cornerRadius: 10)
-                    .frame(width: 50, height: 50) // Adjust bar size
-                    .foregroundColor(.blue)
-                    .offset(y: dragOffset)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                dragOffset = value.translation.height + positions[currentMode]
-                            }
-                            .onEnded { value in
-                                withAnimation(.spring()) {
-                                    // Detect flick/swipe direction
-                                    let swipeDirection = value.predictedEndTranslation.height
-                                    
-                                    // Move to next/previous mode based on swipe direction
-                                    if swipeDirection < -100 {
-                                        currentMode = max(currentMode - 1, 0)
-                                    } else if swipeDirection > 100 {
-                                        currentMode = min(currentMode + 1, 2)
-                                    }
-                                    
-                                    // Set bar position to the new mode
-                                    dragOffset = positions[currentMode]
-                                }
-                            }
-                    )
-                    .offset(y: positions[currentMode])
-                
-                Spacer()
-            }
-            .edgesIgnoringSafeArea(.all)
+    @State var prefTypes: [preferenceType] = [.nudgeFreq, .notifSound, .showTasks, .streakTrack]
+
+    // The three positions: Top, Middle, Bottom
+    let nudgePositions: [CGFloat] = [-100, 0, 100] // Adjust as needed based on screen size
+    let positions: [CGFloat] = [-100, 100] // Adjust as needed based on screen size
+    
+    @State var selectedPreference: preferenceType = .nudgeFreq
+    
+    // Helper function to display user's preference based on type
+    func displayPreference(for pref: preferenceType) -> Any {
+        switch pref {
+        case .nudgeFreq:
+            return userManager.user.preferences.nudgeFrequency
+        case .notifSound:
+            return userManager.user.preferences.notificationSounds
+        case .showTasks:
+            return userManager.user.preferences.showCompletedTasks
+        case .streakTrack:
+            return userManager.user.preferences.streakTracking
         }
     }
+        
+        var body: some View {
+            ZStack {
+                
+                HStack {
+                    VStack {
+                        ForEach(prefTypes) { type in
+                            Button {
+                                selectedPreference = type
+                                initializeSliders()
+                            } label: {
+                                VStack {
+                                    Text(type.rawValue)
+                                    
+                                    Text("\(displayPreference(for: type))")
+                                }
+                            }
+                        }
+                        
+                    }.padding(.horizontal)
+                    
+                    Spacer()
+                    ZStack {
+                        DotGrid(rows: 25, columns: 25)
+                        if selectedPreference == .nudgeFreq {
+                            nudgeSlider
+                                .padding(.horizontal)
+                        } else {
+                            slider
+                                .padding(.horizontal)
+                        }
+                    }
+                    
+                }
+            }.onAppear {
+                initializeSliders()
+            }
+        }
+    
+    var slider: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .frame(width: 50, height: 100) // Adjust bar size
+            .foregroundColor(.blue)
+            .offset(y: dragOffset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        dragOffset = value.translation.height + positions[currentMode]
+                    }
+                    .onEnded { value in
+                        withAnimation(.spring()) {
+                            // Detect flick/swipe direction
+                            let swipeDirection = value.predictedEndTranslation.height
+                            
+                            // Move to next/previous mode based on swipe direction
+                            if swipeDirection < -100 {
+                                currentMode = max(currentMode - 1, 0)
+                            } else if swipeDirection > 100 {
+                                currentMode = min(currentMode + 1, 1)
+                            }
+                            
+                            // Set bar position to the new mode
+                            dragOffset = positions[currentMode]
+                        }
+                    }
+            )
+            .offset(y: positions[currentMode])
+            .onChange(of: currentMode) { oldValue, newValue in
+                if selectedPreference == .nudgeFreq {
+                    print("Not applicable")
+                } else if selectedPreference == .notifSound {
+                    print("Notification Sounds")
+                    if newValue == 1 {
+                        userManager.user.preferences.notificationSounds = true
+                    } else {
+                        userManager.user.preferences.notificationSounds = false
+                    }
+                } else if selectedPreference == .showTasks {
+                    print("Show tasks")
+                    if newValue == 1 {
+                        userManager.user.preferences.showCompletedTasks = true
+                    } else {
+                        userManager.user.preferences.showCompletedTasks = false
+                    }
+                } else if selectedPreference == .streakTrack {
+                    print("Streak tracking")
+                    if newValue == 1 {
+                        userManager.user.preferences.streakTracking = true
+                    } else {
+                        userManager.user.preferences.streakTracking = false
+                    }
+                }
+            }
+    }
+    var nudgeSlider: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .frame(width: 50, height: 100) // Adjust bar size
+            .foregroundColor(.blue)
+            .offset(y: dragOffset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        dragOffset = value.translation.height + nudgePositions[nudgeMode]
+                    }
+                    .onEnded { value in
+                        withAnimation(.spring()) {
+                            // Detect flick/swipe direction
+                            let swipeDirection = value.predictedEndTranslation.height
+                            
+                            // Move to next/previous mode based on swipe direction
+                            if swipeDirection < -100 {
+                                nudgeMode = max(nudgeMode - 1, 0)
+                            } else if swipeDirection > 100 {
+                                nudgeMode = min(nudgeMode + 1, 2)
+                            }
+                            
+                            // Set bar position to the new mode
+                            dragOffset = nudgePositions[nudgeMode]
+                        }
+                    }
+            )
+            .offset(y: nudgePositions[nudgeMode])
+            .onChange(of: nudgeMode) { oldValue, newValue in
+                if nudgeMode == 0 {
+                    userManager.user.preferences.nudgeFrequency = .low
+                } else if nudgeMode == 1 {
+                    userManager.user.preferences.nudgeFrequency = .medium
+                } else if nudgeMode == 2 {
+                    userManager.user.preferences.nudgeFrequency = .high
+                }
+            }
+    }
+    
+    func initializeSliders() {
+            // Set nudgeMode based on saved preference
+            switch userManager.user.preferences.nudgeFrequency {
+            case .low:
+                nudgeMode = 0
+            case .medium:
+                nudgeMode = 1
+            case .high:
+                nudgeMode = 2
+            }
+            
+            // Set dragOffset for nudgeSlider
+        withAnimation {
+            dragOffset = nudgePositions[nudgeMode]
+        }
+            
+            // Set currentMode based on saved preference
+            if selectedPreference == .notifSound {
+                currentMode = userManager.user.preferences.notificationSounds ? 1 : 0
+            } else if selectedPreference == .showTasks {
+                currentMode = userManager.user.preferences.showCompletedTasks ? 1 : 0
+            } else if selectedPreference == .streakTrack {
+                currentMode = userManager.user.preferences.streakTracking ? 1 : 0
+            }
+            
+            // Set dragOffset for other sliders
+        withAnimation {
+            dragOffset = positions[currentMode]
+        }
+    }
+}
 
 struct DotGrid: Shape {
     var rows: Int
@@ -84,4 +233,5 @@ struct DotGrid: Shape {
 
 #Preview {
     PreferencesView()
+        .environmentObject(UserManagement(user: genericUser))
 }
