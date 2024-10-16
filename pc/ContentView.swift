@@ -8,13 +8,18 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State var user: UserModel
+    @EnvironmentObject var userManager: UserManagement
     @State var prompt: String = ""
     @ObservedObject var manager = DataManager()
     var body: some View {
         ZStack {
             VStack {
-                Text("Hey, \(user.name)!")
+                NavigationLink {
+                    PreferencesView()
+                } label: {
+                    Text("Hey, \(userManager.user.name)!")
+                }
+
                 Spacer()
                 TextField("What can I do for you?", text: $prompt)
                     .submitLabel(.send)
@@ -32,5 +37,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(user: genericUser)
+    ContentView()
 }

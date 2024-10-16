@@ -11,9 +11,12 @@ var genericUser = UserModel(id: UUID(), name: "Generic", preferences: UserPrefer
 
 @main
 struct pcApp: App {
+    @State var userManager = UserManagement(user: genericUser)
     var body: some Scene {
         WindowGroup {
-            ContentView(user: genericUser)
+            NavigationView {
+                ContentView()
+            }.environmentObject(userManager)
         }
     }
 }
