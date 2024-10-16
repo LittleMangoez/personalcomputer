@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 enum preferenceType: String, CaseIterable, Identifiable {
     case nudgeFreq = "Nudge Frequency"
@@ -45,38 +46,57 @@ struct PreferencesView: View {
     }
         
         var body: some View {
-            ZStack {
-                
-                HStack {
-                    VStack {
-                        ForEach(prefTypes) { type in
-                            Button {
-                                selectedPreference = type
-                                initializeSliders()
-                            } label: {
-                                VStack {
-                                    Text(type.rawValue)
-                                    
-                                    Text("\(displayPreference(for: type))")
-                                }
+            HStack {
+                VStack(spacing: 50) {
+                    ForEach(prefTypes) { type in
+                        Button {
+                            selectedPreference = type
+                            initializeSliders()
+                        } label: {
+                            VStack {
+                                Text(type.rawValue)
+                                
+                                Text("\(displayPreference(for: type))")
                             }
-                        }
-                        
-                    }.padding(.horizontal)
-                    
-                    Spacer()
-                    ZStack {
-                        DotGrid(rows: 25, columns: 25)
-                        if selectedPreference == .nudgeFreq {
-                            nudgeSlider
-                                .padding(.horizontal)
-                        } else {
-                            slider
-                                .padding(.horizontal)
+                            .padding(5)
                         }
                     }
                     
-                }
+                }.padding(.horizontal)
+                
+                Spacer()
+                
+                ZStack {
+                    DotGrid(rows: 50, columns: 8).opacity(0.08)
+                    
+                    VStack {
+                        Image(systemName: "arrow.up")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 25)
+                            .foregroundStyle(Color.gray)
+                            .symbolEffect(.bounce, value: 2)
+                            .padding(.top, 25)
+                        Spacer()
+                        Image(systemName: "arrow.down")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 25)
+                            .foregroundStyle(Color.gray)
+                            .symbolEffect(.bounce, value: 2)
+                    }.padding()
+                    
+                    if selectedPreference == .nudgeFreq {
+                        nudgeSlider
+                            .padding(.horizontal)
+                    } else {
+                        slider
+                            .padding(.horizontal)
+                    }
+                }.frame(width: 60)
+                    .padding()
+                    .ignoresSafeArea(.container)
+                
             }.onAppear {
                 initializeSliders()
             }
@@ -85,7 +105,7 @@ struct PreferencesView: View {
     var slider: some View {
         RoundedRectangle(cornerRadius: 10)
             .frame(width: 50, height: 100) // Adjust bar size
-            .foregroundColor(.blue)
+            .foregroundColor(.gray)
             .offset(y: dragOffset)
             .gesture(
                 DragGesture()
@@ -107,6 +127,10 @@ struct PreferencesView: View {
                             // Set bar position to the new mode
                             dragOffset = positions[currentMode]
                         }
+                        
+                        // Trigger light impact haptic feedback
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
                     }
             )
             .offset(y: positions[currentMode])
@@ -115,21 +139,21 @@ struct PreferencesView: View {
                     print("Not applicable")
                 } else if selectedPreference == .notifSound {
                     print("Notification Sounds")
-                    if newValue == 1 {
+                    if newValue == 0 {
                         userManager.user.preferences.notificationSounds = true
                     } else {
                         userManager.user.preferences.notificationSounds = false
                     }
                 } else if selectedPreference == .showTasks {
                     print("Show tasks")
-                    if newValue == 1 {
+                    if newValue == 0 {
                         userManager.user.preferences.showCompletedTasks = true
                     } else {
                         userManager.user.preferences.showCompletedTasks = false
                     }
                 } else if selectedPreference == .streakTrack {
                     print("Streak tracking")
-                    if newValue == 1 {
+                    if newValue == 0 {
                         userManager.user.preferences.streakTracking = true
                     } else {
                         userManager.user.preferences.streakTracking = false
@@ -140,7 +164,7 @@ struct PreferencesView: View {
     var nudgeSlider: some View {
         RoundedRectangle(cornerRadius: 10)
             .frame(width: 50, height: 100) // Adjust bar size
-            .foregroundColor(.blue)
+            .foregroundColor(.gray)
             .offset(y: dragOffset)
             .gesture(
                 DragGesture()
@@ -162,15 +186,18 @@ struct PreferencesView: View {
                             // Set bar position to the new mode
                             dragOffset = nudgePositions[nudgeMode]
                         }
+                        // Trigger light impact haptic feedback
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
                     }
             )
             .offset(y: nudgePositions[nudgeMode])
             .onChange(of: nudgeMode) { oldValue, newValue in
-                if nudgeMode == 0 {
+                if nudgeMode == 2 {
                     userManager.user.preferences.nudgeFrequency = .low
                 } else if nudgeMode == 1 {
                     userManager.user.preferences.nudgeFrequency = .medium
-                } else if nudgeMode == 2 {
+                } else if nudgeMode == 0 {
                     userManager.user.preferences.nudgeFrequency = .high
                 }
             }
@@ -180,11 +207,11 @@ struct PreferencesView: View {
             // Set nudgeMode based on saved preference
             switch userManager.user.preferences.nudgeFrequency {
             case .low:
-                nudgeMode = 0
+                nudgeMode = 2
             case .medium:
                 nudgeMode = 1
             case .high:
-                nudgeMode = 2
+                nudgeMode = 0
             }
             
             // Set dragOffset for nudgeSlider
@@ -194,11 +221,11 @@ struct PreferencesView: View {
             
             // Set currentMode based on saved preference
             if selectedPreference == .notifSound {
-                currentMode = userManager.user.preferences.notificationSounds ? 1 : 0
+                currentMode = userManager.user.preferences.notificationSounds ? 0 : 1
             } else if selectedPreference == .showTasks {
-                currentMode = userManager.user.preferences.showCompletedTasks ? 1 : 0
+                currentMode = userManager.user.preferences.showCompletedTasks ? 0 : 1
             } else if selectedPreference == .streakTrack {
-                currentMode = userManager.user.preferences.streakTracking ? 1 : 0
+                currentMode = userManager.user.preferences.streakTracking ? 0 : 1
             }
             
             // Set dragOffset for other sliders
